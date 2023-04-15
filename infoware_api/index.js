@@ -48,28 +48,34 @@ app.get('/', (req, res) => {
 
 app.post('/', (req, res) => {
     let {
-        name, job, country, phone, email, address, city, state, pname, pcountry, pphone, prelation, sname, scountry, sphone, srelation,
+        name, job, country, phone, email, address, city, state,
+        pname, pcountry, pphone, prelation,
+        sname, scountry, sphone, srelation
     } = req.query;
 
     User.get('*', (_, result) => {
         const id = +result[result.length - 1].id + 1;
         try {
-            User.put({ id, name, job, country, phone, email, address, city, state }, (e) => {
+            User.put({ id, name, job, country, phone, email, address, city, state }, (e, _) => {
                 if (e) emit(res, 400);
-                else
-                    PE.put({ id, pname, pcountry, pphone, prelation }, e => {
-                        if (e) emit(res, 400);
-                        else {
-                            if (!sname && !scountry && !sphone && !srelation) {
-                                emit(res, 200, 'CREATED successfully');
-                                return;
-                            }
-                            SE.put({ id, sname, scountry, sphone, srelation }, e => {
-                                if (e) emit(res, 400);
-                                else emit(res, 200, 'CREATED successfully');
-                            });
+                else {
+                    PE.put({ id, pname, pcountry, pphone, prelation }, (e, _) => {
+                        if (e) {
+                            emit(res, 400);
+                            User.delete(`id = ${id}`);
+                            return;
                         }
+                        if (!sname && !scountry && !sphone && !srelation) {
+                            emit(res, 200, 'CREATED successfully');
+                            return;
+                        }
+                        SE.put({ id, sname, scountry, sphone, srelation }, (e, _) => {
+                            if (e) emit(res, 400);
+                            else emit(res, 200, 'CREATED successfully');
+                        });
+
                     });
+                }
             });
         } catch (e) { emit(res, 400); }
     });
@@ -84,7 +90,6 @@ app.post('/update', (req, res) => {
     }
 
     tables[table].update(postData, `id = ${id}`, (e, _) => {
-        console.log(e)
         if (e) emit(res, 400);
         else emit(res, 200, 'UPDATE successful');
     });
@@ -92,15 +97,17 @@ app.post('/update', (req, res) => {
 
 
 app.post('/delete', (req, res) => {
-    const { id, table } = req.query;
-    if (!id || !table || !Object.keys(tables).includes(table)) {
+    const id = req.query.id;
+    if (!id) {
         emit(res, 400);
         return;
     }
 
-    tables[table].delete(`id = ${id}`, (e, _) => {
-        if (e) emit(res, 400);
-        else emit(res, 200, 'DELETED successfully');
+    [SE, PE, User].forEach((tab, i) => {
+        tab.delete(`id = ${id}`, e => {
+            if (e) emit(res, 400);
+            if (!e && i == 2) emit(res, 200, 'DELETE successfull');
+        });
     });
 
 })
