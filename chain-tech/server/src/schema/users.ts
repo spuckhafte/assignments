@@ -5,6 +5,7 @@ const userSchema = new mongoose.Schema({
     
     tasks: [{
         body: String,
+        uid: String,
 
         createdAt: {
             type: Number,
@@ -16,13 +17,26 @@ const userSchema = new mongoose.Schema({
             default: () => 0,
         },
 
-        filter: String,
-        important: Boolean,
+        filter: {
+            type: String,
+            default: "",
+        },
 
-        complete: Boolean, 
+        important: {
+            type: Boolean,
+            default: false,
+        },
+
+        complete: {
+            type: Boolean,
+            default: false,
+        }
     }],
 
-    filters: [String],
+    filters: {
+        type: [String],
+        default: [],
+    },
 });
 
 export default mongoose.model('Users', userSchema);

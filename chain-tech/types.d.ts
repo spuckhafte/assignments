@@ -7,6 +7,7 @@ export type User = {
 
 export type Task = {
     body: string,
+    uid: string,
 
     createdAt: number,
     dueDate: number,
