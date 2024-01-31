@@ -1,5 +1,5 @@
 import express from "express";
-import users from "./schema/users";
+import users from "./schema/users.js";
 import { Task, User } from "../../types"
 import mongoose from "mongoose";
 import dotenv from "dotenv";
@@ -34,7 +34,6 @@ app.get("/getuser", async (req, res) => {
     } as User;
 
     res.json(userRequestedParsed);
-    res.end();
 });
 
 app.post("/register", async (req, res) => {
@@ -72,7 +71,7 @@ app.post("/register", async (req, res) => {
 app.post("/newTask", async (req, res) => {
     const query = req.query as {
         username?: string,
-        task?: Task,
+        task?: string,
     } | null;
 
     if (!query || !query.username || !query.task) {
@@ -83,13 +82,15 @@ app.post("/newTask", async (req, res) => {
 
     res.status(200);
 
+    const parsedTask = JSON.parse(query.task) as Task;
+
     const userRequested = await users.findOne({ username: query.username });
     if (!userRequested || !userRequested._id) {
         res.end("Username does not exists");
         return;
     }
     
-    userRequested.tasks.push(query.task);
+    userRequested.tasks.push(parsedTask);
     userRequested.save();
 
     res.end("Task saved");
@@ -98,7 +99,7 @@ app.post("/newTask", async (req, res) => {
 app.post("/editTask", async (req, res) => {
     const query = req.query as {
         username?: string,
-        task?: Task,
+        task?: string,
     } | null;
 
     if (!query || !query.username || !query.task) {
@@ -109,6 +110,8 @@ app.post("/editTask", async (req, res) => {
 
     res.status(200);
 
+    const parsedTask = JSON.parse(query.task) as Task;
+
     const userRequested = await users.findOne({ username: query.username });
     if (!userRequested || !userRequested._id) {
         res.end("Username does not exists");
@@ -116,12 +119,12 @@ app.post("/editTask", async (req, res) => {
     }
 
     userRequested.tasks.forEach(task => {
-        if (task.uid == query.task?.uid && query.task) {
-            task.body = query.task.body;
-            task.important = query.task.important;
-            task.dueDate = query.task.dueDate;
-            task.filter = query.task.filter;
-            task.complete = query.task.complete;
+        if (task.uid == parsedTask.uid) {
+            task.body = parsedTask.body;
+            task.important = parsedTask.important;
+            task.dueDate = parsedTask.dueDate;
+            task.filter = parsedTask.filter;
+            task.complete = parsedTask.complete;
         }
     });
 
